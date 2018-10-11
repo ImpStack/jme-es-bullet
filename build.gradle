@@ -32,7 +32,13 @@ dependencies {
         exclude group: "org.codehaus.groovy", module: "groovy-all"
     }
     compile "org.slf4j:slf4j-api:1.7.+"
-    compile "org.slf4j:jul-to-slf4j:1.7.+"
+    
+    testRuntime 'org.codehaus.groovy:groovy-all:2.4.+'
+    testCompile "org.apache.logging.log4j:log4j-core:2.7"
+    testCompile "org.apache.logging.log4j:log4j-api:2.7"
+    testCompile "org.apache.logging.log4j:log4j-slf4j-impl:2.7"
+    testCompile "com.fasterxml.jackson.dataformat:jackson-dataformat-yaml:2.8.+"
+    testCompile "com.fasterxml.jackson.core:jackson-databind:2.8.+"
 }
 
 publishing {

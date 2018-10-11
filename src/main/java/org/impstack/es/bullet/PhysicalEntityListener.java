@@ -1,13 +1,16 @@
 package org.impstack.es.bullet;
 
 /**
+ * A listener that hooks into the {@link BulletSystem} update loop and notifies about physical object changes.
+ * The listeners are called multiple times each frame and should be efficient and few.
+ *
  * @author remy
  * @since 10/10/18
  */
 public interface PhysicalEntityListener {
 
     /**
-     * Called at the start of the physics frame
+     * Called at the start of the physics frame, before the physics calculation.
      */
     public void startFrame();
 
@@ -18,7 +21,7 @@ public interface PhysicalEntityListener {
     public void physicalEntityAdded(PhysicalEntity physicalEntity);
 
     /**
-     * Called each physics frame for all attached physical entities to the physics space
+     * Called each frame for all attached physical entities to the physics space after the physics calculation.
      * @param physicalEntity the updated physical entity
      */
     public void physicalEntityUpdated(PhysicalEntity physicalEntity);

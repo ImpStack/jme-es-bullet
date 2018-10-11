@@ -9,6 +9,8 @@ import com.jme3.math.Vector3f;
 import com.jme3.scene.Spatial;
 
 /**
+ * A helper factory to create {@link PhysicalShape} objects.
+ *
  * @author remy
  * @since 10/10/18
  */

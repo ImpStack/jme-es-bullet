@@ -6,7 +6,7 @@ import com.jme3.math.Vector3f;
 import com.simsilica.es.EntityId;
 
 /**
- * A bullet rigidbody linked to an entity
+ * A bullet rigidbody object directly linked to an entity.
  *
  * @author remy
  * @since 10/10/18

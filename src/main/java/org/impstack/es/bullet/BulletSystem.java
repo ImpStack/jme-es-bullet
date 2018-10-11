@@ -4,18 +4,22 @@ import com.jme3.bullet.PhysicsSpace;
 import com.jme3.math.Vector3f;
 import com.jme3.util.SafeArrayList;
 import com.simsilica.es.Entity;
+import com.simsilica.es.EntityContainer;
 import com.simsilica.es.EntityData;
-import com.simsilica.es.EntityId;
 import com.simsilica.sim.AbstractGameSystem;
 import com.simsilica.sim.SimTime;
-import org.impstack.jme.es.EntityContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 /**
+ * A bullet implementation that can run as a {@link com.simsilica.sim.GameSystem} and manages physical entities.
+ * Entities that have the right entity components, will be picked up and added/updated/removed from the Bullet physics
+ * space. Using listeners other systems can be notified about changes of the entities.
+ *
+ *
+ * and handles {@link PhysicalEntity}.
+ * An entity that has a {@link PhysicalShape}, {@link Mass} and {@link SpawnPosition} will be handled by the system.
+ *
  * @author remy
  * @since 10/10/18
  */
@@ -25,17 +29,19 @@ public class BulletSystem extends AbstractGameSystem {
 
     private EntityData entityData;
     private PhysicsSpace physicsSpace;
-    private CollisionDispatcher collisionDispatcher = new CollisionDispatcher();
     private PhysicsSpace.BroadphaseType broadphaseType = PhysicsSpace.BroadphaseType.DBVT;
     private Vector3f worldMin = new Vector3f(-10000f, -10000f, -10000f);
     private Vector3f worldMax = new Vector3f(10000f, 10000f, 10000f);
     private float speed = 1.0f;
+    private boolean calculateFps = true;
+    private float timeCounter;
+    private int frameCounter;
+    private int fps;
+
     // a list of physical entity listeners
     private SafeArrayList<PhysicalEntityListener> physicalEntityListeners = new SafeArrayList<>(PhysicalEntityListener.class);
-    // a map of all static and dynamic entities attached to the physics space
-    private Map<EntityId, RigidBodyEntity> rigidBodyMap = new ConcurrentHashMap<>();
-
-    private PhysicalEntitiesContainer physicalEntities;
+    // the container of all the rigidbodies
+    private RigidBodyContainer rigidBodyContainer;
 
     public BulletSystem() {
     }
@@ -46,27 +52,46 @@ public class BulletSystem extends AbstractGameSystem {
 
     @Override
     protected void initialize() {
-        physicsSpace = new PhysicsSpace(worldMin, worldMax, broadphaseType);
-        physicsSpace.addCollisionListener(collisionDispatcher);
+        if (entityData == null)
+            throw new IllegalStateException("EntityData is not set when initializing BulletSystem!");
 
-        physicalEntities = new PhysicalEntitiesContainer(entityData);
+        physicsSpace = new PhysicsSpace(worldMin, worldMax, broadphaseType);
+
+        rigidBodyContainer = new RigidBodyContainer(entityData);
     }
 
     @Override
     public void start() {
-        physicalEntities.start();
+        rigidBodyContainer.start();
     }
 
     @Override
     public void update(SimTime time) {
         startFrame();
 
-        physicalEntities.update();
+        // perform fps calculation
+        if (calculateFps) {
+            timeCounter += time.getTpf();
+            frameCounter++;
+            if (timeCounter >= 1) {
+                // one second has passed
+                fps = (int) (frameCounter / timeCounter);
+                timeCounter = 0;
+                frameCounter = 0;
+            }
+        }
+
+        rigidBodyContainer.update();
 
         float t = (float) time.getTpf() * speed;
         if (t != 0) {
             physicsSpace.update(t);
             physicsSpace.distributeEvents();
+
+            for (PhysicalEntity entity : rigidBodyContainer.getArray()) {
+                physicalObjectUpdated(entity);
+            }
+
         }
 
         endFrame();
@@ -74,7 +99,7 @@ public class BulletSystem extends AbstractGameSystem {
 
     @Override
     public void stop() {
-        physicalEntities.stop();
+        rigidBodyContainer.stop();
     }
 
     @Override
@@ -83,6 +108,9 @@ public class BulletSystem extends AbstractGameSystem {
     }
 
     public void setEntityData(EntityData entityData) {
+        if (isInitialized())
+            throw new IllegalStateException("BulletSystem is already initialized!");
+
         this.entityData = entityData;
     }
 
@@ -92,6 +120,14 @@ public class BulletSystem extends AbstractGameSystem {
 
     public void setSpeed(float speed) {
         this.speed = speed;
+    }
+
+    public PhysicsSpace getPhysicsSpace() {
+        return physicsSpace;
+    }
+
+    public int getFps() {
+        return fps;
     }
 
     public void addPhysicalEntityListener(PhysicalEntityListener physicalEntityListener) {
@@ -132,49 +168,52 @@ public class BulletSystem extends AbstractGameSystem {
         }
     }
 
-    private class PhysicalEntitiesContainer extends EntityContainer {
+    private class RigidBodyContainer extends EntityContainer<RigidBodyEntity> {
 
-        public PhysicalEntitiesContainer(EntityData entityData) {
-            super(entityData, PhysicalShape.class, Mass.class, SpawnPosition.class);
+        public RigidBodyContainer(EntityData ed) {
+            super(ed, PhysicalShape.class, Mass.class, SpawnPosition.class);
         }
 
         @Override
-        protected void addEntity(Entity e) {
-            RigidBodyEntity rigidBodyEntity = new RigidBodyEntity(e.getId(), e.get(PhysicalShape.class), e.get(Mass.class));
+        protected RigidBodyEntity[] getArray() {
+            return super.getArray();
+        }
 
+        @Override
+        protected RigidBodyEntity addObject(Entity e) {
+            Mass mass = e.get(Mass.class);
             SpawnPosition position = e.get(SpawnPosition.class);
-            rigidBodyEntity.setPhysicsLocation(position.getLocation());
-            rigidBodyEntity.setPhysicsRotation(position.getRotation());
 
-            LOG.trace("Adding {} to {}", rigidBodyEntity, physicsSpace);
-            physicsSpace.addCollisionObject(rigidBodyEntity);
-            rigidBodyMap.put(e.getId(), rigidBodyEntity);
+            RigidBodyEntity result = new RigidBodyEntity(e.getId(), e.get(PhysicalShape.class), mass);
 
-            physicalObjectAdded(rigidBodyEntity);
+            result.setPhysicsLocation(position.getLocation());
+            result.setPhysicsRotation(position.getRotation());
+
+            LOG.trace("Adding {} to {}", result, physicsSpace);
+            physicsSpace.addCollisionObject(result);
+            physicalObjectAdded(result);
+
+            return result;
         }
 
         @Override
-        protected void updateEntity(Entity e) {
+        protected void updateObject(RigidBodyEntity object, Entity e) {
             // we only update the position
             SpawnPosition position = e.get(SpawnPosition.class);
 
-            RigidBodyEntity rigidBodyEntity = rigidBodyMap.get(e.getId());
-            LOG.trace("Moving {} to {}", rigidBodyEntity, position);
-            rigidBodyEntity.setPhysicsLocation(position.getLocation());
-            rigidBodyEntity.setPhysicsRotation(position.getRotation());
+            LOG.trace("Moving {} to {}", object, position);
+            object.setPhysicsLocation(position.getLocation());
+            object.setPhysicsRotation(position.getRotation());
 
-            physicalObjectUpdated(rigidBodyEntity);
+            physicalObjectUpdated(object);
         }
 
         @Override
-        protected void removeEntity(Entity e) {
-            RigidBodyEntity rigidBodyEntity = rigidBodyMap.remove(e.getId());
-            LOG.trace("Removing {} from {}", rigidBodyEntity, physicsSpace);
-            physicsSpace.removeCollisionObject(rigidBodyEntity);
-
-            physicalObjectRemoved(rigidBodyEntity);
+        protected void removeObject(RigidBodyEntity object, Entity e) {
+            LOG.trace("Removing {} from {}", object, physicsSpace);
+            physicsSpace.removeCollisionObject(object);
+            physicalObjectRemoved(object);
         }
-
     }
 
 }
