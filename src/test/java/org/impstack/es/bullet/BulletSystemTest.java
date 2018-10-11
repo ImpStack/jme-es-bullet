@@ -65,7 +65,7 @@ public class BulletSystemTest extends JmeLauncher implements ActionListener {
                 new StatsAppState());
 
         BaseStyles.loadGlassStyle();
-        GuiGlobals.getInstance().getStyles().setDefaultStyle("glass");
+        GuiGlobals.getInstance().getStyles().setDefaultStyle(BaseStyles.GLASS);
 
         inputManager.addMapping(ADD_BOX_ENTITY_MAPPING, ADD_BOX_ENTITY_TRIGGER);
         inputManager.addMapping(ADD_SPHERE_ENTITY_MAPPING, ADD_SPHERE_ENTITY_TRIGGER);
