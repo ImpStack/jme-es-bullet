@@ -5,9 +5,10 @@ import com.jme3.app.state.BaseAppState;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.Node;
 import com.simsilica.es.Entity;
+import com.simsilica.es.EntityContainer;
 import com.simsilica.es.EntityData;
 import org.impstack.jme.ApplicationContext;
-import org.impstack.jme.es.EntityContainer;
+import org.impstack.jme.es.Position;
 
 public class VisualSystem extends BaseAppState {
 
@@ -44,32 +45,31 @@ public class VisualSystem extends BaseAppState {
         models.update();
     }
 
-    private class Models extends EntityContainer {
+    private class Models extends EntityContainer<Geometry> {
 
         public Models(EntityData entityData) {
             super(entityData, Model.class, Position.class);
         }
 
         @Override
-        protected void addEntity(Entity e) {
+        protected Geometry addObject(Entity e) {
             Geometry geometry = e.get(Model.class).getGeometry();
             geometry.setLocalTranslation(e.get(Position.class).getLocation());
             geometry.setLocalRotation(e.get(Position.class).getRotation());
-
             node.attachChild(geometry);
+
+            return geometry;
         }
 
         @Override
-        protected void updateEntity(Entity e) {
-            Geometry geometry = e.get(Model.class).getGeometry();
-            geometry.setLocalTranslation(e.get(Position.class).getLocation());
-            geometry.setLocalRotation(e.get(Position.class).getRotation());
+        protected void updateObject(Geometry object, Entity e) {
+            object.setLocalTranslation(e.get(Position.class).getLocation());
+            object.setLocalRotation(e.get(Position.class).getRotation());
         }
 
         @Override
-        protected void removeEntity(Entity e) {
-            Geometry geometry = e.get(Model.class).getGeometry();
-            geometry.removeFromParent();
+        protected void removeObject(Geometry object, Entity e) {
+            object.removeFromParent();
         }
 
     }

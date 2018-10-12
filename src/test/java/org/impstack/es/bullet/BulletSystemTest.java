@@ -22,8 +22,13 @@ import com.simsilica.lemur.*;
 import com.simsilica.lemur.component.BorderLayout;
 import com.simsilica.lemur.component.SpringGridLayout;
 import com.simsilica.lemur.style.BaseStyles;
+import org.impstack.es.bullet.debug.BulletDebugState;
+import org.impstack.es.bullet.debug.PhysicalEntityDebugStatusPublisher;
 import org.impstack.jme.JmeLauncher;
 import org.impstack.jme.es.BaseEntityDataState;
+import org.impstack.jme.es.Decay;
+import org.impstack.jme.es.DecaySystem;
+import org.impstack.jme.es.Position;
 import org.impstack.jme.scene.GeometryUtils;
 import org.impstack.jme.state.BackgroundSystemsState;
 import org.impstack.jme.state.GuiLayoutState;
@@ -90,13 +95,16 @@ public class BulletSystemTest extends JmeLauncher implements ActionListener {
         if (!bulletStarted && bulletSystem.isInitialized()) {
             LOG.debug("Setup Bullet");
             bulletSystem.getPhysicsSpace().setGravity(new Vector3f(0, -20f, 0));
-            bulletSystem.addPhysicalEntityListener(new MyPhysicalEntityListener(entityData));
+            bulletSystem.addPhysicalEntityListener(new PhysicalEntityPositionPublisher(entityData));
+            bulletSystem.addPhysicalEntityListener(new PhysicalEntityDebugStatusPublisher(entityData));
             bulletStarted = true;
         }
 
         if (!sceneSetup && bulletStarted) {
             LOG.debug("Setup Scene");
             stateManager.attach(new VisualSystem(entityData));
+            stateManager.attach(new BulletDebugState(entityData));
+            backgroundSystemsState.attach(new DecaySystem(entityData));
 
             Geometry floor = new GeometryUtils(this).createGeometry(new Quad(30, 30), ColorRGBA.LightGray);
             floor.move(-15, 0, 15);
@@ -171,41 +179,15 @@ public class BulletSystemTest extends JmeLauncher implements ActionListener {
         // create an entity
         EntityData entityData = stateManager.getState(BaseEntityDataState.class).getEntityData();
         EntityId box = entityData.createEntity();
-        entityData.setComponents(box, new Mass(mass), new SpawnPosition(location), physicalShape, new Model(geometry), new Position(location.clone(), new Quaternion()));
+        entityData.setComponents(box,
+                new Mass(mass),
+                new SpawnPosition(location),
+                physicalShape,
+                new Model(geometry),
+                new Position(location.clone(), new Quaternion()),
+                new Decay(10000));
 
         LOG.info("Adding entity at {}", new Vector3f(x, y, z));
-    }
-
-    private class MyPhysicalEntityListener implements PhysicalEntityListener {
-
-        private final EntityData entityData;
-
-        public MyPhysicalEntityListener(EntityData entityData) {
-            this.entityData = entityData;
-        }
-
-        @Override
-        public void startFrame() {
-        }
-
-        @Override
-        public void physicalEntityAdded(PhysicalEntity physicalEntity) {
-        }
-
-        @Override
-        public void physicalEntityUpdated(PhysicalEntity physicalEntity) {
-            Position position = new Position(physicalEntity.getLocation(), physicalEntity.getRotation());
-            entityData.setComponent(physicalEntity.getEntityId(), position);
-        }
-
-        @Override
-        public void physicalEntityRemoved(PhysicalEntity physicalEntity) {
-        }
-
-        @Override
-        public void endFrame() {
-        }
-
     }
 
     private class DebugWindow extends Container {
