@@ -25,9 +25,9 @@ import org.slf4j.LoggerFactory;
  * {@link PhysicalEntityDebugStatusPublisher} and {@link org.impstack.es.bullet.PhysicalEntityPositionPublisher} to the
  * {@link org.impstack.es.bullet.BulletSystem}
  */
-public class BulletDebugState extends BaseAppState {
+public class BulletSystemDebugState extends BaseAppState {
 
-    private static final Logger LOG = LoggerFactory.getLogger(BulletDebugState.class);
+    private static final Logger LOG = LoggerFactory.getLogger(BulletSystemDebugState.class);
 
     private final EntityData entityData;
 
@@ -40,7 +40,7 @@ public class BulletDebugState extends BaseAppState {
     private ColorRGBA staticColor = ColorRGBA.White;
     private DebugObjects debugObjects;
 
-    public BulletDebugState(EntityData entityData) {
+    public BulletSystemDebugState(EntityData entityData) {
         this.entityData = entityData;
     }
 

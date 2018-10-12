@@ -1,7 +1,6 @@
 package org.impstack.es.bullet;
 
 import com.jme3.app.StatsAppState;
-import com.jme3.bullet.debug.BulletDebugAppState;
 import com.jme3.bullet.objects.PhysicsRigidBody;
 import com.jme3.bullet.util.CollisionShapeFactory;
 import com.jme3.input.MouseInput;
@@ -22,7 +21,7 @@ import com.simsilica.lemur.*;
 import com.simsilica.lemur.component.BorderLayout;
 import com.simsilica.lemur.component.SpringGridLayout;
 import com.simsilica.lemur.style.BaseStyles;
-import org.impstack.es.bullet.debug.BulletDebugState;
+import org.impstack.es.bullet.debug.BulletSystemDebugState;
 import org.impstack.es.bullet.debug.PhysicalEntityDebugStatusPublisher;
 import org.impstack.jme.JmeLauncher;
 import org.impstack.jme.es.BaseEntityDataState;
@@ -103,7 +102,7 @@ public class BulletSystemTest extends JmeLauncher implements ActionListener {
         if (!sceneSetup && bulletStarted) {
             LOG.debug("Setup Scene");
             stateManager.attach(new VisualSystem(entityData));
-            stateManager.attach(new BulletDebugState(entityData));
+            stateManager.attach(new BulletSystemDebugState(entityData));
             backgroundSystemsState.attach(new DecaySystem(entityData));
 
             Geometry floor = new GeometryUtils(this).createGeometry(new Quad(30, 30), ColorRGBA.LightGray);
@@ -119,9 +118,8 @@ public class BulletSystemTest extends JmeLauncher implements ActionListener {
             cam.setLocation(new Vector3f(0, 20, 40));
             cam.lookAt(Vector3f.ZERO, Vector3f.UNIT_Y);
             sceneSetup = true;
-        }
 
-        if (debugWindow == null) {
+            // setup the debug window
             debugWindow = new DebugWindow();
             stateManager.getState(GuiLayoutState.class).add(debugWindow, BorderLayout.Position.East);
         }
@@ -141,17 +139,9 @@ public class BulletSystemTest extends JmeLauncher implements ActionListener {
     }
 
     private void setDebugView(boolean enabled) {
-        BulletDebugAppState debugAppState = stateManager.getState(BulletDebugAppState.class);
-        if (enabled) {
-            if (debugAppState == null) {
-                getStateManager().attach(new BulletDebugAppState(bulletSystem.getPhysicsSpace()));
-            }
-        } else {
-            if (debugAppState != null) {
-                getStateManager().detach(debugAppState);
-            }
-        }
-        LOG.debug("Physics debug {}", stateManager.hasState(stateManager.getState(BulletDebugAppState.class)) ? "attached" : "detached");
+        BulletSystemDebugState debugAppState = stateManager.getState(BulletSystemDebugState.class);
+        debugAppState.setEnabled(enabled);
+        LOG.debug("Physics debug {}", debugAppState.isEnabled());
     }
 
     private void addEntity(String type) {
@@ -201,6 +191,7 @@ public class BulletSystemTest extends JmeLauncher implements ActionListener {
             bulletDebugCheckbox = addChild(new Checkbox("Debug view"));
             bulletDebugCheckbox.setChecked(false);
             bulletDebugCheckbox.addClickCommands(cmd -> setDebugView(bulletDebugCheckbox.isChecked()));
+            setDebugView(bulletDebugCheckbox.isChecked());
             bulletDebugCheckbox.setInsets(new Insets3f(5, 5, 5, 5));
 
             bulletFpsLabel = addChild(new Label("Bullet fps"));
