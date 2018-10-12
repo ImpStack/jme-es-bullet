@@ -103,7 +103,7 @@ public class BulletSystemTest extends JmeLauncher implements ActionListener {
             LOG.debug("Setup Scene");
             stateManager.attach(new VisualSystem(entityData));
             stateManager.attach(new BulletSystemDebugState(entityData));
-            backgroundSystemsState.attach(new DecaySystem(entityData));
+            backgroundSystemsState.enqueue(() -> backgroundSystemsState.attach(new DecaySystem(entityData)));
 
             Geometry floor = new GeometryUtils(this).createGeometry(new Quad(30, 30), ColorRGBA.LightGray);
             floor.move(-15, 0, 15);
