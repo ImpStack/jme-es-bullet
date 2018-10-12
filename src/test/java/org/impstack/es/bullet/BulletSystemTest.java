@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 /**
- * An application to test the {@link BulletSystem
+ * An application to test the {@link BulletSystem}
  * A static solid quad is drawn, using the left mouse button you can drop boxes on the quad, using the right mouse
  * button you can drop spheres on the quad.
  * A debug window is shown to toggle the physics debug view and display the bullet fps.
