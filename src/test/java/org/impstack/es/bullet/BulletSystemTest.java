@@ -7,14 +7,21 @@ import com.jme3.input.MouseInput;
 import com.jme3.input.controls.ActionListener;
 import com.jme3.input.controls.MouseButtonTrigger;
 import com.jme3.input.controls.Trigger;
+import com.jme3.light.AmbientLight;
+import com.jme3.light.DirectionalLight;
+import com.jme3.material.Material;
 import com.jme3.math.ColorRGBA;
 import com.jme3.math.FastMath;
 import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
+import com.jme3.post.FilterPostProcessor;
+import com.jme3.renderer.queue.RenderQueue;
 import com.jme3.scene.Geometry;
 import com.jme3.scene.shape.Box;
 import com.jme3.scene.shape.Quad;
 import com.jme3.scene.shape.Sphere;
+import com.jme3.shadow.DirectionalLightShadowFilter;
+import com.jme3.shadow.EdgeFilteringMode;
 import com.simsilica.es.EntityData;
 import com.simsilica.es.EntityId;
 import com.simsilica.lemur.*;
@@ -28,7 +35,6 @@ import org.impstack.jme.es.BaseEntityDataState;
 import org.impstack.jme.es.Decay;
 import org.impstack.jme.es.DecaySystem;
 import org.impstack.jme.es.Position;
-import org.impstack.jme.scene.GeometryUtils;
 import org.impstack.jme.state.BackgroundSystemsState;
 import org.impstack.jme.state.GuiLayoutState;
 import org.slf4j.Logger;
@@ -55,6 +61,7 @@ public class BulletSystemTest extends JmeLauncher implements ActionListener {
 
     private DebugWindow debugWindow;
     private BulletSystem bulletSystem;
+    private int entitiesPerClick = 5;
 
     public static void main(String[] args) {
         new BulletSystemTest().start();
@@ -70,6 +77,22 @@ public class BulletSystemTest extends JmeLauncher implements ActionListener {
 
         BaseStyles.loadGlassStyle();
         GuiGlobals.getInstance().getStyles().setDefaultStyle(BaseStyles.GLASS);
+
+        rootNode.addLight(new AmbientLight(new ColorRGBA(0.5f, 0.5f, 0.5f, 1f)));
+        rootNode.addLight(new DirectionalLight(new Vector3f(-0.1f, -1f, -0.1f).normalizeLocal(), ColorRGBA.White));
+
+        DirectionalLightShadowFilter shadowFilter = new DirectionalLightShadowFilter(assetManager, 1024, 4);
+        shadowFilter.setLight((DirectionalLight) rootNode.getLocalLightList().get(1));
+        shadowFilter.setEdgeFilteringMode(EdgeFilteringMode.PCFPOISSON);
+        shadowFilter.setEdgesThickness(2);
+        shadowFilter.setShadowIntensity(0.75f);
+        shadowFilter.setLambda(0.65f);
+        shadowFilter.setShadowZExtend(75);
+
+        FilterPostProcessor fpp = new FilterPostProcessor(assetManager);
+        fpp.addFilter(shadowFilter);
+
+        viewPort.addProcessor(fpp);
 
         inputManager.addMapping(ADD_BOX_ENTITY_MAPPING, ADD_BOX_ENTITY_TRIGGER);
         inputManager.addMapping(ADD_SPHERE_ENTITY_MAPPING, ADD_SPHERE_ENTITY_TRIGGER);
@@ -105,7 +128,9 @@ public class BulletSystemTest extends JmeLauncher implements ActionListener {
             stateManager.attach(new BulletSystemDebugState(entityData));
             backgroundSystemsState.enqueue(() -> backgroundSystemsState.attach(new DecaySystem(entityData)));
 
-            Geometry floor = new GeometryUtils(this).createGeometry(new Quad(30, 30), ColorRGBA.LightGray);
+            Geometry floor = new Geometry("floor", new Quad(30, 30));
+            floor.setMaterial(getMaterial(ColorRGBA.LightGray));
+            floor.setShadowMode(RenderQueue.ShadowMode.Receive);
             floor.move(-15, 0, 15);
             floor.rotate(new Quaternion().fromAngleAxis(-FastMath.HALF_PI, Vector3f.UNIT_X));
             rootNode.attachChild(floor);
@@ -113,9 +138,22 @@ public class BulletSystemTest extends JmeLauncher implements ActionListener {
             floorPhysicsObject.setPhysicsLocation(floor.getWorldTranslation());
             floorPhysicsObject.setPhysicsRotation(floor.getWorldRotation());
             bulletSystem.getPhysicsSpace().addCollisionObject(floorPhysicsObject);
+            // a few static physical entities
+            int total = 10;
+            for (int i = 0; i < total; i++) {
+                Geometry box = new Geometry("box", new Box(1, 1, 1));
+                box.setMaterial(getMaterial(ColorRGBA.Brown));
+                box.setShadowMode(RenderQueue.ShadowMode.CastAndReceive);
+                PhysicalShape physicalShape = PhysicalShapeFactory.createBoxShape(new Vector3f(1, 1, 1));
+                entityData.setComponents(entityData.createEntity(),
+                        new Mass(0),
+                        new SpawnPosition(new Vector3f(FastMath.nextRandomInt(-14, 14), 1, FastMath.nextRandomInt(-14, 14))),
+                        physicalShape,
+                        new Model(box));
+            }
 
             // some camera stuff
-            cam.setLocation(new Vector3f(0, 20, 40));
+            cam.setLocation(new Vector3f(-30, 30, 30));
             cam.lookAt(Vector3f.ZERO, Vector3f.UNIT_Y);
             sceneSetup = true;
 
@@ -132,9 +170,13 @@ public class BulletSystemTest extends JmeLauncher implements ActionListener {
     @Override
     public void onAction(String name, boolean isPressed, float tpf) {
         if (ADD_BOX_ENTITY_MAPPING.equals(name) && !isPressed) {
-            addEntity("box");
+            for (int i = 0; i < entitiesPerClick; i++) {
+                addEntity("box");
+            }
         } else if (ADD_SPHERE_ENTITY_MAPPING.equals(name) && !isPressed) {
-            addEntity("sphere");
+            for (int i = 0; i < entitiesPerClick; i++) {
+                addEntity("sphere");
+            }
         }
     }
 
@@ -144,11 +186,19 @@ public class BulletSystemTest extends JmeLauncher implements ActionListener {
         LOG.debug("Physics debug {}", debugAppState.isEnabled());
     }
 
+    private Material getMaterial(ColorRGBA color) {
+        Material material = new Material(assetManager, "Common/MatDefs/Light/Lighting.j3md");
+        material.setBoolean("UseMaterialColors", true);
+        material.setColor("Ambient", color);
+        material.setColor("Diffuse", color);
+        return material;
+    }
+
     private void addEntity(String type) {
         float radius = 0.5f;
         float mass = 50;
         int x = FastMath.nextRandomInt(0, 20) - 10;
-        int y = FastMath.nextRandomInt(2, 15);
+        int y = FastMath.nextRandomInt(10, 15);
         int z = FastMath.nextRandomInt(0, 20) - 10;
 
         Vector3f location = new Vector3f(x, y, z);
@@ -157,14 +207,17 @@ public class BulletSystemTest extends JmeLauncher implements ActionListener {
         PhysicalShape physicalShape;
 
         if ("box".equals(type)) {
-            geometry = new GeometryUtils(this).createGeometry(new Box(radius, radius, radius), ColorRGBA.randomColor());
+            geometry = new Geometry("box", new Box(radius, radius, radius));
             physicalShape = PhysicalShapeFactory.createBoxShape(new Vector3f(radius, radius, radius));
         } else if ("sphere".equals(type)) {
-            geometry = new GeometryUtils(this).createGeometry(new Sphere(16, 16, radius), ColorRGBA.randomColor());
+            geometry = new Geometry("sphere", new Sphere(16, 16, radius));
             physicalShape = PhysicalShapeFactory.createSphereShape(radius);
         } else {
             throw new NotImplementedException();
         }
+
+        geometry.setMaterial(getMaterial(ColorRGBA.randomColor()));
+        geometry.setShadowMode(RenderQueue.ShadowMode.CastAndReceive);
 
         // create an entity
         EntityData entityData = stateManager.getState(BaseEntityDataState.class).getEntityData();
@@ -175,7 +228,7 @@ public class BulletSystemTest extends JmeLauncher implements ActionListener {
                 physicalShape,
                 new Model(geometry),
                 new Position(location.clone(), new Quaternion()),
-                new Decay(10000));
+                new Decay(60000));
 
         LOG.info("Adding entity at {}", new Vector3f(x, y, z));
     }
