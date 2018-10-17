@@ -14,6 +14,7 @@ import com.simsilica.es.EntityId;
 public class RigidBodyEntity extends PhysicsRigidBody implements PhysicalEntity<PhysicsRigidBody> {
 
     private final EntityId entityId;
+    private PhysicalEntityDriver driver;
 
     public RigidBodyEntity(EntityId entityId, PhysicalShape shape, Mass mass) {
         super(shape.getCollisionShape(), mass.getMass());
@@ -38,6 +39,26 @@ public class RigidBodyEntity extends PhysicsRigidBody implements PhysicalEntity<
     @Override
     public Quaternion getRotation() {
         return getPhysicsRotation();
+    }
+
+    @Override
+    public PhysicalEntityDriver getPhysicalEntityDriver() {
+        return driver;
+    }
+
+    /**
+     * Set a driver to control the physical entity or null to remove a previous driver.
+     * The appropriate {@link PhysicalEntityDriver} lifecycle methods will be called.
+     * @param driver the driver to control the physical entity or null
+     */
+    public void setPhysicalEntityDriver(PhysicalEntityDriver driver) {
+        if (this.driver != null) {
+            this.driver.cleanup(this);
+        }
+        this.driver = driver;
+        if (this.driver != null) {
+            this.driver.initialize(this);
+        }
     }
 
     @Override

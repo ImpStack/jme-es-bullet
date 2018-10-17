@@ -6,10 +6,14 @@ import com.jme3.util.SafeArrayList;
 import com.simsilica.es.Entity;
 import com.simsilica.es.EntityContainer;
 import com.simsilica.es.EntityData;
+import com.simsilica.es.EntityId;
 import com.simsilica.sim.AbstractGameSystem;
 import com.simsilica.sim.SimTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * A bullet implementation that can run as a {@link com.simsilica.sim.GameSystem} and manages physical entities.
@@ -42,6 +46,8 @@ public class BulletSystem extends AbstractGameSystem {
     private SafeArrayList<PhysicalEntityListener> physicalEntityListeners = new SafeArrayList<>(PhysicalEntityListener.class);
     // the container of all the rigidbodies
     private RigidBodyContainer rigidBodyContainer;
+    // a queue for pending PhysicalEntityDriver setup
+    private Queue<PhysicalEntityDriverSetup> pendingDriverSetup = new ConcurrentLinkedQueue<>();
 
     public BulletSystem() {
     }
@@ -83,8 +89,25 @@ public class BulletSystem extends AbstractGameSystem {
 
         rigidBodyContainer.update();
 
+        // run pending objects setup
+        PhysicalEntityDriverSetup setup = pendingDriverSetup.poll();
+        if (setup != null) {
+            boolean result = setup.execute();
+            if (!result) {
+                // setup failed, add it back to the queue.
+                pendingDriverSetup.offer(setup);
+            }
+        }
+
         float t = (float) time.getTpf() * speed;
         if (t != 0) {
+
+            for (PhysicalEntity entity : rigidBodyContainer.getArray()) {
+                if (entity.getPhysicalEntityDriver() != null) {
+                    entity.getPhysicalEntityDriver().update(t);
+                }
+            }
+
             physicsSpace.update(t);
             physicsSpace.distributeEvents();
 
@@ -136,6 +159,14 @@ public class BulletSystem extends AbstractGameSystem {
 
     public void removePhysicalEntityListener(PhysicalEntityListener physicalEntityListener) {
         physicalEntityListeners.remove(physicalEntityListener);
+    }
+
+    public void setPhysicalEntityDriver(EntityId entityId, PhysicalEntityDriver driver) {
+        if (!isInitialized())
+            return;
+
+        // add to the setup queue
+        pendingDriverSetup.offer(new PhysicalEntityDriverSetup(entityId, driver));
     }
 
     private void startFrame() {
@@ -213,6 +244,34 @@ public class BulletSystem extends AbstractGameSystem {
             LOG.trace("Removing {} from {}", object, physicsSpace);
             physicsSpace.removeCollisionObject(object);
             physicalObjectRemoved(object);
+        }
+    }
+
+    private class PhysicalEntityDriverSetup {
+        // helper class to setup a driver on an entity, when the setup fails more then 99 times, it's aborted.
+        private final EntityId entityId;
+        private final PhysicalEntityDriver driver;
+        private int tries;
+
+        public PhysicalEntityDriverSetup(EntityId entityId, PhysicalEntityDriver driver) {
+            this.entityId = entityId;
+            this.driver = driver;
+        }
+
+        public boolean execute() {
+            RigidBodyEntity rigidBodyEntity = rigidBodyContainer.getObject(entityId);
+            if (rigidBodyEntity != null) {
+                LOG.trace("Added {} to {} after {} tries", driver, entityId, tries);
+                rigidBodyEntity.setPhysicalEntityDriver(driver);
+                return true;
+            }
+            tries++;
+
+            if (tries > 99) {
+                LOG.error("Tried {} times to setup {} on {}. Aborting!", tries, driver, entityId);
+                return true;
+            }
+            return false;
         }
     }
 

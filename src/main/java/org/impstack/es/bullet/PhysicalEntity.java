@@ -37,4 +37,10 @@ public interface PhysicalEntity<T extends PhysicsCollisionObject> {
      */
     public Quaternion getRotation();
 
+    /**
+     * Return the driver that is controlling the physical entity or null when there isn't a driver
+     * @return the physical entity driver or null
+     */
+    public PhysicalEntityDriver getPhysicalEntityDriver();
+
 }

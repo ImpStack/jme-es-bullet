@@ -3,6 +3,7 @@ package org.impstack.es.bullet;
 import com.jme3.bounding.BoundingBox;
 import com.jme3.bullet.collision.shapes.BoxCollisionShape;
 import com.jme3.bullet.collision.shapes.CapsuleCollisionShape;
+import com.jme3.bullet.collision.shapes.CompoundCollisionShape;
 import com.jme3.bullet.collision.shapes.SphereCollisionShape;
 import com.jme3.bullet.util.CollisionShapeFactory;
 import com.jme3.math.Vector3f;
@@ -39,6 +40,26 @@ public class PhysicalShapeFactory {
     public static PhysicalShape createCapsuleShape(Spatial spatial) {
         Vector3f extent = ((BoundingBox) spatial.getWorldBound()).getExtent(new Vector3f());
         return new PhysicalShape(new CapsuleCollisionShape(extent.z, (2 * extent.y) - (2 * extent.z)));
+    }
+
+    /**
+     * The created collisionshape is a capsule collision shape that is attached to a compound collision shape with an
+     * offset to set the object center at the bottom of the capsule.
+     * @param radius radius of the capsule
+     * @param height height of the capsule
+     * @param centerAtBottom true if the center of the capsule should be at the bottom of the object
+     * @return a capsule physical shape
+     */
+    public static PhysicalShape createCapsuleShape(float radius, float height, boolean centerAtBottom) {
+        CapsuleCollisionShape capsule = new CapsuleCollisionShape(radius, height - (2 * radius));
+        if (centerAtBottom) {
+            CompoundCollisionShape compoundShape = new CompoundCollisionShape();
+            Vector3f offset = new Vector3f(0, height * 0.5f, 0);
+            compoundShape.addChildShape(capsule, offset);
+            return new PhysicalShape(compoundShape);
+        } else {
+            return new PhysicalShape(capsule);
+        }
     }
 
 }
