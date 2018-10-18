@@ -1,5 +1,6 @@
 package org.impstack.es.bullet;
 
+import com.jme3.app.FlyCamAppState;
 import com.jme3.app.StatsAppState;
 import com.jme3.bullet.objects.PhysicsRigidBody;
 import com.jme3.bullet.util.CollisionShapeFactory;
@@ -55,13 +56,11 @@ public class BulletSystemDriverTest extends JmeLauncher {
                 new BackgroundSystemsState(),
                 new BaseEntityDataState(),
                 new GuiLayoutState(),
+                new FlyCamAppState(),
                 new StatsAppState());
 
         BaseStyles.loadGlassStyle();
         GuiGlobals.getInstance().getStyles().setDefaultStyle(BaseStyles.GLASS);
-
-        cam.setLocation(new Vector3f(0, 20, 0));
-        cam.lookAt(Vector3f.ZERO, Vector3f.UNIT_Y);
     }
 
     @Override
@@ -90,6 +89,7 @@ public class BulletSystemDriverTest extends JmeLauncher {
 
         if (bulletStarted && !sceneSetup) {
             LOG.debug("Setup scene");
+            getStateManager().getState(FlyCamAppState.class).getCamera().setDragToRotate(true);
             stateManager.attach(new VisualSystem(entityData));
 
             Geometry floor = new GeometryUtils(this).createGeometry(new Quad(10, 10), ColorRGBA.LightGray);
@@ -105,7 +105,7 @@ public class BulletSystemDriverTest extends JmeLauncher {
 
             EntityId entityId = entityData.createEntity();
             entityData.setComponents(entityId,
-                    new SpawnPosition(Vector3f.ZERO),
+                    new SpawnPosition(new Vector3f(0, 0.1f, 0)),
                     new Mass(80),
                     PhysicalShapeFactory.createCapsuleShape(0.25f, 1.8f, true),
                     new Model(createSpatial())
@@ -147,8 +147,8 @@ public class BulletSystemDriverTest extends JmeLauncher {
             if (collisionResult == null)
                 return;
 
-            Vector3f location = entityDriver.getRigidBodyEntity().getLocation();
-            Vector3f targetLocation = collisionResult.getContactPoint();
+            Vector3f location = entityDriver.getRigidBodyEntity().getLocation().setY(0);
+            Vector3f targetLocation = collisionResult.getContactPoint().setY(0);
             Vector3f direction = targetLocation.subtract(location);
 
             LOG.info("Direction: {}", direction);

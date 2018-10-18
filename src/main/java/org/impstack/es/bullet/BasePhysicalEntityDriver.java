@@ -4,7 +4,11 @@ import com.jme3.math.FastMath;
 import com.jme3.math.Vector3f;
 
 /**
- * A starting implementation of the {@link PhysicalEntityDriver} interface that for autonomous upright characters.
+ * A starting implementation of the {@link PhysicalEntityDriver} interface for autonomous upright characters.
+ * The linear velocity of the physical entity can be set using a direction ({@link #setMoveDirection(Vector3f)} and a
+ * speed ({@link #setMoveSpeed(float)} value.
+ * The angular velocity of the physical entity can be set using a view direction ({@link #setViewDirection(Vector3f)}
+ * and a turning speed ({@link #setTurningSpeed(float)} value.
  */
 public class BasePhysicalEntityDriver implements PhysicalEntityDriver {
 
@@ -78,7 +82,7 @@ public class BasePhysicalEntityDriver implements PhysicalEntityDriver {
     }
 
     protected void move(float tpf) {
-        moveDirection.multLocal(60 * tpf * moveSpeed);
+        Vector3f localMoveDirection  = moveDirection.mult(60 * tpf * moveSpeed);
 
         Vector3f velocity = rigidBodyEntity.getLinearVelocity();
         Vector3f currentVelocity = velocity.clone();
@@ -90,10 +94,10 @@ public class BasePhysicalEntityDriver implements PhysicalEntityDriver {
         existingForwardVelocity = existingForwardVelocity * PHYSICS_DAMPING;
         velocity.addLocal(new Vector3f(-existingLeftVelocity, 0, -existingForwardVelocity));
 
-        float speed = moveDirection.length();
+        float speed = localMoveDirection.length();
         // calculate the extra needed velocity (desired velocity - current velocity)
         if (speed > 0) {
-            Vector3f localWalkDirection = moveDirection.normalize();
+            Vector3f localWalkDirection = localMoveDirection.normalize();
             float existingVelocity = velocity.dot(localWalkDirection);
             //calculate the final velocity in the desired direction
             float finalVelocity = speed - existingVelocity;

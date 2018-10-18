@@ -20,7 +20,7 @@ import org.slf4j.LoggerFactory;
 /**
  * An application state that shows debug meshes of all physical entities that are managed by the ES. Objects that are
  * directly added to the physics space will not be shown.
- * For a physical entity to be rendered by the BulletDebugState, a {@link PhysicalDebugStatus} component and
+ * For a physical entity to be rendered by the BulletDebugState, a {@link PhysicalEntityDebugStatus} component and
  * {@link Position} component are required on the entity. Both components can be published by adding the
  * {@link PhysicalEntityDebugStatusPublisher} and {@link org.impstack.es.bullet.PhysicalEntityPositionPublisher} to the
  * {@link org.impstack.es.bullet.BulletSystem}
@@ -82,11 +82,11 @@ public class BulletSystemDebugState extends BaseAppState {
      * returns the material based on the status of the physical entity.
      */
     private Material getMaterial(int status) {
-        if (status == PhysicalDebugStatus.ACTIVE) {
+        if (status == PhysicalEntityDebugStatus.ACTIVE) {
             return activeMaterial;
-        } else if (status == PhysicalDebugStatus.INACTIVE) {
+        } else if (status == PhysicalEntityDebugStatus.INACTIVE) {
             return inActiveMaterial;
-        } else if (status == PhysicalDebugStatus.STATIC) {
+        } else if (status == PhysicalEntityDebugStatus.STATIC) {
             return staticMaterial;
         }
         return null;
@@ -95,7 +95,7 @@ public class BulletSystemDebugState extends BaseAppState {
     private class DebugObjects extends EntityContainer<Spatial> {
 
         public DebugObjects(EntityData ed) {
-            super(ed, PhysicalDebugStatus.class, Position.class);
+            super(ed, PhysicalEntityDebugStatus.class, Position.class);
         }
 
         @Override
@@ -107,7 +107,7 @@ public class BulletSystemDebugState extends BaseAppState {
             debugShape.setName("debug-shape-" + e.getId());
             debugShape.setLocalTranslation(position.getLocation());
             debugShape.setLocalRotation(position.getRotation());
-            debugShape.setMaterial(getMaterial(e.get(PhysicalDebugStatus.class).getStatus()));
+            debugShape.setMaterial(getMaterial(e.get(PhysicalEntityDebugStatus.class).getStatus()));
 
             LOG.trace("Adding {} to {}", debugShape, debugNode);
             debugNode.attachChild(debugShape);
@@ -122,7 +122,7 @@ public class BulletSystemDebugState extends BaseAppState {
             object.setLocalTranslation(position.getLocation());
             object.setLocalRotation(position.getRotation());
 
-            PhysicalDebugStatus status = e.get(PhysicalDebugStatus.class);
+            PhysicalEntityDebugStatus status = e.get(PhysicalEntityDebugStatus.class);
             SpatialUtils.getGeometry(object).ifPresent(g -> {
                 Material material = getMaterial(status.getStatus());
                 if (!g.getMaterial().equals(material)) {

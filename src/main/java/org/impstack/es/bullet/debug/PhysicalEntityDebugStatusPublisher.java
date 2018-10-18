@@ -6,7 +6,7 @@ import org.impstack.es.bullet.PhysicalEntityListener;
 import org.impstack.es.bullet.RigidBodyEntity;
 
 /**
- * A {@link PhysicalEntityListener} implementation that publishes and updates {@link PhysicalDebugStatus} components
+ * A {@link PhysicalEntityListener} implementation that publishes and updates {@link PhysicalEntityDebugStatus} components
  * based on the status of the {@link PhysicalEntity} in the physics space.
  */
 public class PhysicalEntityDebugStatusPublisher implements PhysicalEntityListener {
@@ -23,21 +23,21 @@ public class PhysicalEntityDebugStatusPublisher implements PhysicalEntityListene
 
     @Override
     public void physicalEntityAdded(PhysicalEntity physicalEntity) {
-        entityData.setComponent(physicalEntity.getEntityId(), new PhysicalDebugStatus(getStatus(physicalEntity)));
+        entityData.setComponent(physicalEntity.getEntityId(), new PhysicalEntityDebugStatus(getStatus(physicalEntity)));
     }
 
     @Override
     public void physicalEntityUpdated(PhysicalEntity physicalEntity) {
         int status = getStatus(physicalEntity);
-        PhysicalDebugStatus debugStatus = entityData.getComponent(physicalEntity.getEntityId(), PhysicalDebugStatus.class);
+        PhysicalEntityDebugStatus debugStatus = entityData.getComponent(physicalEntity.getEntityId(), PhysicalEntityDebugStatus.class);
         if (debugStatus == null || debugStatus.getStatus() != status) {
-            entityData.setComponent(physicalEntity.getEntityId(), new PhysicalDebugStatus(status));
+            entityData.setComponent(physicalEntity.getEntityId(), new PhysicalEntityDebugStatus(status));
         }
     }
 
     @Override
     public void physicalEntityRemoved(PhysicalEntity physicalEntity) {
-        entityData.removeComponent(physicalEntity.getEntityId(), PhysicalDebugStatus.class);
+        entityData.removeComponent(physicalEntity.getEntityId(), PhysicalEntityDebugStatus.class);
     }
 
     @Override
@@ -47,8 +47,8 @@ public class PhysicalEntityDebugStatusPublisher implements PhysicalEntityListene
     private static int getStatus(PhysicalEntity physicalEntity) {
         if (physicalEntity instanceof RigidBodyEntity) {
             RigidBodyEntity rigidBodyEntity = (RigidBodyEntity) physicalEntity;
-            return rigidBodyEntity.getMass() == 0 ? PhysicalDebugStatus.STATIC : rigidBodyEntity.isActive() ?
-                    PhysicalDebugStatus.ACTIVE : PhysicalDebugStatus.INACTIVE;
+            return rigidBodyEntity.getMass() == 0 ? PhysicalEntityDebugStatus.STATIC : rigidBodyEntity.isActive() ?
+                    PhysicalEntityDebugStatus.ACTIVE : PhysicalEntityDebugStatus.INACTIVE;
         }
         return -1;
     }

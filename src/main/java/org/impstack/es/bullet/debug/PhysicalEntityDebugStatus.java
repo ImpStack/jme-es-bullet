@@ -5,7 +5,7 @@ import com.simsilica.es.EntityComponent;
 /**
  * An entity component specifying the status of the physical entity in the physics space.
  */
-public class PhysicalDebugStatus implements EntityComponent {
+public class PhysicalEntityDebugStatus implements EntityComponent {
 
     public static final int STATIC = 0;
     public static final int ACTIVE = 1;
@@ -13,7 +13,7 @@ public class PhysicalDebugStatus implements EntityComponent {
 
     private final int status;
 
-    public PhysicalDebugStatus(int status) {
+    public PhysicalEntityDebugStatus(int status) {
         this.status = status;
     }
 
@@ -23,7 +23,7 @@ public class PhysicalDebugStatus implements EntityComponent {
 
     @Override
     public String toString() {
-        return "PhysicalDebugStatus{" +
+        return "PhysicalEntityDebugStatus{" +
                 "status=" + status +
                 '}';
     }
