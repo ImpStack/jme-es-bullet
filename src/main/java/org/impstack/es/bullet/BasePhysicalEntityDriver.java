@@ -46,6 +46,7 @@ public class BasePhysicalEntityDriver implements PhysicalEntityDriver {
         this.rigidBodyEntity = (RigidBodyEntity) entity;
         this.rigidBodyEntity.setAngularFactor(ANGULAR_FACTOR);
     }
+
     @Override
     public void update(float tpf) {
         // move the physical entity using the moveSpeed and moveDirection
