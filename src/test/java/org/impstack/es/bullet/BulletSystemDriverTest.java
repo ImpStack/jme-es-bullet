@@ -75,7 +75,9 @@ public class BulletSystemDriverTest extends JmeLauncher {
             LOG.debug("Start Bullet");
             bulletSystem = new BulletSystem(entityData);
             backgroundSystemsState.enqueue(() -> backgroundSystemsState.attach(bulletSystem));
-            stateManager.attach(new BulletSystemDebugState(entityData));
+            BulletSystemDebugState bulletDebugState = new BulletSystemDebugState(entityData);
+            bulletDebugState.setDriverDebugOffset(new Vector3f(0, 1, 0));
+            stateManager.attach(bulletDebugState);
             bulletAttached = true;
         }
 
@@ -112,6 +114,8 @@ public class BulletSystemDriverTest extends JmeLauncher {
             );
 
             entityDriver = new BasePhysicalEntityDriver();
+            entityDriver.setEntityData(entityData);
+            entityDriver.setDebugEnabled(true);
             bulletSystem.setPhysicalEntityDriver(entityId, entityDriver);
 
             debugWindow = new DebugWindow();
@@ -180,7 +184,7 @@ public class BulletSystemDriverTest extends JmeLauncher {
             super(new SpringGridLayout(Axis.Y, Axis.X));
 
             bulletDebugCheckbox = addChild(new Checkbox("Debug view"));
-            bulletDebugCheckbox.setChecked(true);
+            bulletDebugCheckbox.setChecked(false);
             bulletDebugCheckbox.addClickCommands(cmd -> setDebugView(bulletDebugCheckbox.isChecked()));
             setDebugView(bulletDebugCheckbox.isChecked());
             bulletDebugCheckbox.setInsets(new Insets3f(5, 5, 5, 5));

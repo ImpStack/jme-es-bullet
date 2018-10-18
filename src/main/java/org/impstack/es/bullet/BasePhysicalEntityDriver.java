@@ -2,6 +2,8 @@ package org.impstack.es.bullet;
 
 import com.jme3.math.FastMath;
 import com.jme3.math.Vector3f;
+import com.simsilica.es.EntityData;
+import org.impstack.es.bullet.debug.PhysicalEntityDriverDebug;
 
 /**
  * A starting implementation of the {@link PhysicalEntityDriver} interface for autonomous upright characters.
@@ -9,6 +11,7 @@ import com.jme3.math.Vector3f;
  * speed ({@link #setMoveSpeed(float)} value.
  * The angular velocity of the physical entity can be set using a view direction ({@link #setViewDirection(Vector3f)}
  * and a turning speed ({@link #setTurningSpeed(float)} value.
+ * When debug is enabled, {@link PhysicalEntityDriverDebug} components are published.
  */
 public class BasePhysicalEntityDriver implements PhysicalEntityDriver {
 
@@ -22,13 +25,24 @@ public class BasePhysicalEntityDriver implements PhysicalEntityDriver {
     protected float moveSpeed = 1.0f;
     protected float turningSpeed = 1.0f;
 
+    protected PhysicalEntity physicalEntity;
     protected RigidBodyEntity rigidBodyEntity;
+    protected boolean debugEnabled = false;
+    protected EntityData entityData;
+
+    public BasePhysicalEntityDriver() {
+    }
+
+    public BasePhysicalEntityDriver(EntityData entityData) {
+        this.entityData = entityData;
+    }
 
     @Override
     public void initialize(PhysicalEntity entity) {
         if (!(entity instanceof RigidBodyEntity)) {
             throw new IllegalArgumentException("PhysicalEntityDriver only supports PhysicalEntities of type RigidBodyEntity!");
         }
+        this.physicalEntity = entity;
         this.rigidBodyEntity = (RigidBodyEntity) entity;
         this.rigidBodyEntity.setAngularFactor(ANGULAR_FACTOR);
     }
@@ -39,6 +53,12 @@ public class BasePhysicalEntityDriver implements PhysicalEntityDriver {
 
         // turn the physical entity using the turningSpeed and viewDirection
         turn(tpf);
+
+        // publish debug component when debug is enabled
+        if (isDebugEnabled() && entityData != null) {
+            entityData.setComponents(physicalEntity.getEntityId(),
+                    new PhysicalEntityDriverDebug(rigidBodyEntity.getLinearVelocity(), rigidBodyEntity.getRotation().mult(Vector3f.UNIT_Z)));
+        }
     }
 
     @Override
@@ -75,6 +95,18 @@ public class BasePhysicalEntityDriver implements PhysicalEntityDriver {
 
     public void setTurningSpeed(float turningSpeed) {
         this.turningSpeed = turningSpeed;
+    }
+
+    public boolean isDebugEnabled() {
+        return debugEnabled;
+    }
+
+    public void setDebugEnabled(boolean debugEnabled) {
+        this.debugEnabled = debugEnabled;
+    }
+
+    public void setEntityData(EntityData entityData) {
+        this.entityData = entityData;
     }
 
     protected RigidBodyEntity getRigidBodyEntity() {
