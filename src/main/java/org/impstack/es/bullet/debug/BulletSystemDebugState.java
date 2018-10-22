@@ -14,6 +14,7 @@ import com.simsilica.es.Entity;
 import com.simsilica.es.EntityContainer;
 import com.simsilica.es.EntityData;
 import org.impstack.es.bullet.PhysicalShape;
+import org.impstack.es.bullet.PhysicalShapeRegistry;
 import org.impstack.jme.ApplicationContext;
 import org.impstack.jme.es.Position;
 import org.impstack.jme.scene.SpatialUtils;
@@ -42,6 +43,7 @@ public class BulletSystemDebugState extends BaseAppState {
     private final EntityData entityData;
 
     private Node debugNode;
+    private PhysicalShapeRegistry shapeRegistry;
 
     private Material activeMaterial;
     private ColorRGBA activeColor = ColorRGBA.Green;
@@ -61,6 +63,11 @@ public class BulletSystemDebugState extends BaseAppState {
 
     public BulletSystemDebugState(EntityData entityData) {
         this.entityData = entityData;
+    }
+
+    public BulletSystemDebugState(EntityData entityData, PhysicalShapeRegistry shapeRegistry) {
+        this.entityData = entityData;
+        this.shapeRegistry = shapeRegistry;
     }
 
     @Override
@@ -112,6 +119,14 @@ public class BulletSystemDebugState extends BaseAppState {
 
     public void setDriverDebugOffset(Vector3f driverDebugOffset) {
         this.driverDebugOffset = driverDebugOffset;
+    }
+
+    public PhysicalShapeRegistry getShapeRegistry() {
+        return shapeRegistry;
+    }
+
+    public void setShapeRegistry(PhysicalShapeRegistry shapeRegistry) {
+        this.shapeRegistry = shapeRegistry;
     }
 
     /**
@@ -190,7 +205,7 @@ public class BulletSystemDebugState extends BaseAppState {
             PhysicalShape physicalShape = entityData.getComponent(e.getId(), PhysicalShape.class);
             Position position = e.get(Position.class);
 
-            Spatial debugShape = DebugShapeFactory.getDebugShape(physicalShape.getCollisionShape());
+            Spatial debugShape = DebugShapeFactory.getDebugShape(shapeRegistry.get(physicalShape));
             debugShape.setName("debug-shape-" + e.getId());
             debugShape.setLocalTranslation(position.getLocation());
             debugShape.setLocalRotation(position.getRotation());

@@ -1,6 +1,8 @@
 package org.impstack.es.bullet;
 
 import com.jme3.app.StatsAppState;
+import com.jme3.bullet.collision.shapes.BoxCollisionShape;
+import com.jme3.bullet.collision.shapes.SphereCollisionShape;
 import com.jme3.bullet.objects.PhysicsRigidBody;
 import com.jme3.bullet.util.CollisionShapeFactory;
 import com.jme3.input.MouseInput;
@@ -61,6 +63,7 @@ public class BulletSystemTest extends JmeLauncher implements ActionListener {
 
     private DebugWindow debugWindow;
     private BulletSystem bulletSystem;
+    private DefaultPhysicalShapeRegistry shapeRegistry;
     private int entitiesPerClick = 5;
 
     public static void main(String[] args) {
@@ -109,7 +112,8 @@ public class BulletSystemTest extends JmeLauncher implements ActionListener {
 
         if (!bulletAttached) {
             LOG.debug("Start Bullet");
-            bulletSystem = new BulletSystem(entityData);
+            shapeRegistry = new DefaultPhysicalShapeRegistry();
+            bulletSystem = new BulletSystem(entityData, shapeRegistry);
             backgroundSystemsState.enqueue(() -> backgroundSystemsState.attach(bulletSystem));
             bulletAttached = true;
         }
@@ -125,7 +129,7 @@ public class BulletSystemTest extends JmeLauncher implements ActionListener {
         if (!sceneSetup && bulletStarted) {
             LOG.debug("Setup Scene");
             stateManager.attach(new VisualSystem(entityData));
-            stateManager.attach(new BulletSystemDebugState(entityData));
+            stateManager.attach(new BulletSystemDebugState(entityData, shapeRegistry));
             backgroundSystemsState.enqueue(() -> backgroundSystemsState.attach(new DecaySystem(entityData)));
 
             Geometry floor = new Geometry("floor", new Quad(30, 30));
@@ -139,16 +143,17 @@ public class BulletSystemTest extends JmeLauncher implements ActionListener {
             floorPhysicsObject.setPhysicsRotation(floor.getWorldRotation());
             bulletSystem.getPhysicsSpace().addCollisionObject(floorPhysicsObject);
             // a few static physical entities
+            shapeRegistry.register("box", new BoxCollisionShape(new Vector3f(1, 1, 1)));
             int total = 10;
             for (int i = 0; i < total; i++) {
                 Geometry box = new Geometry("box", new Box(1, 1, 1));
                 box.setMaterial(getMaterial(ColorRGBA.Brown));
                 box.setShadowMode(RenderQueue.ShadowMode.CastAndReceive);
-                PhysicalShape physicalShape = PhysicalShapeFactory.createBoxShape(new Vector3f(1, 1, 1));
+
                 entityData.setComponents(entityData.createEntity(),
                         new Mass(0),
                         new SpawnPosition(new Vector3f(FastMath.nextRandomInt(-14, 14), 1, FastMath.nextRandomInt(-14, 14))),
-                        physicalShape,
+                        new PhysicalShape("box"),
                         new Model(box));
             }
 
@@ -208,10 +213,10 @@ public class BulletSystemTest extends JmeLauncher implements ActionListener {
 
         if ("box".equals(type)) {
             geometry = new Geometry("box", new Box(radius, radius, radius));
-            physicalShape = PhysicalShapeFactory.createBoxShape(new Vector3f(radius, radius, radius));
+            physicalShape = shapeRegistry.register(new BoxCollisionShape(new Vector3f(radius, radius, radius)));
         } else if ("sphere".equals(type)) {
             geometry = new Geometry("sphere", new Sphere(16, 16, radius));
-            physicalShape = PhysicalShapeFactory.createSphereShape(radius);
+            physicalShape = shapeRegistry.register(new SphereCollisionShape(radius));
         } else {
             throw new NotImplementedException();
         }

@@ -48,6 +48,8 @@ public class BulletSystem extends AbstractGameSystem {
     private RigidBodyContainer rigidBodyContainer;
     // a queue for pending PhysicalEntityDriver setup
     private Queue<PhysicalEntityDriverSetup> pendingDriverSetup = new ConcurrentLinkedQueue<>();
+    // the registry of collision shapes
+    private PhysicalShapeRegistry shapeRegistry;
 
     public BulletSystem() {
     }
@@ -56,10 +58,18 @@ public class BulletSystem extends AbstractGameSystem {
         this.entityData = entityData;
     }
 
+    public BulletSystem(EntityData entityData, PhysicalShapeRegistry shapeRegistry) {
+        this.entityData = entityData;
+        this.shapeRegistry = shapeRegistry;
+    }
+
     @Override
     protected void initialize() {
         if (entityData == null)
             throw new IllegalStateException("EntityData is not set when initializing BulletSystem!");
+
+        if (shapeRegistry == null)
+            throw new IllegalStateException("PhysicalShapeRegistry is not set when initializing BulletSystem!");
 
         physicsSpace = new PhysicsSpace(worldMin, worldMax, broadphaseType);
 
@@ -169,6 +179,18 @@ public class BulletSystem extends AbstractGameSystem {
         pendingDriverSetup.offer(new PhysicalEntityDriverSetup(entityId, driver));
     }
 
+    public PhysicalShapeRegistry getShapeRegistry() {
+        return shapeRegistry;
+    }
+
+    /**
+     * Sets the collision shapes registry that will be used to find collision shapes for physical entities.
+     * @param shapeRegistry the collision shapes registry
+     */
+    public void setShapeRegistry(PhysicalShapeRegistry shapeRegistry) {
+        this.shapeRegistry = shapeRegistry;
+    }
+
     private void startFrame() {
         for (PhysicalEntityListener listener : physicalEntityListeners.getArray()) {
             listener.startFrame();
@@ -213,9 +235,10 @@ public class BulletSystem extends AbstractGameSystem {
         @Override
         protected RigidBodyEntity addObject(Entity e) {
             Mass mass = e.get(Mass.class);
+            PhysicalShape shape = e.get(PhysicalShape.class);
             SpawnPosition position = e.get(SpawnPosition.class);
 
-            RigidBodyEntity result = new RigidBodyEntity(e.getId(), e.get(PhysicalShape.class), mass);
+            RigidBodyEntity result = new RigidBodyEntity(e.getId(), shapeRegistry.get(shape), mass);
 
             result.setPhysicsLocation(position.getLocation());
             result.setPhysicsRotation(position.getRotation());

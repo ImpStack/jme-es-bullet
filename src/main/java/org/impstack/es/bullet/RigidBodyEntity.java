@@ -1,5 +1,6 @@
 package org.impstack.es.bullet;
 
+import com.jme3.bullet.collision.shapes.CollisionShape;
 import com.jme3.bullet.objects.PhysicsRigidBody;
 import com.jme3.math.Quaternion;
 import com.jme3.math.Vector3f;
@@ -16,8 +17,8 @@ public class RigidBodyEntity extends PhysicsRigidBody implements PhysicalEntity<
     private final EntityId entityId;
     private PhysicalEntityDriver driver;
 
-    public RigidBodyEntity(EntityId entityId, PhysicalShape shape, Mass mass) {
-        super(shape.getCollisionShape(), mass.getMass());
+    public RigidBodyEntity(EntityId entityId, CollisionShape shape, Mass mass) {
+        super(shape, mass.getMass());
         this.entityId = entityId;
     }
 

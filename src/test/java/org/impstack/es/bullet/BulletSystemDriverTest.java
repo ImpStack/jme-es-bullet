@@ -44,6 +44,7 @@ public class BulletSystemDriverTest extends JmeLauncher {
     private boolean sceneSetup = false;
     private DebugWindow debugWindow;
     private BulletSystem bulletSystem;
+    private DefaultPhysicalShapeRegistry shapeRegistry;
     private BasePhysicalEntityDriver entityDriver;
 
     public static void main(String[] args) {
@@ -73,9 +74,10 @@ public class BulletSystemDriverTest extends JmeLauncher {
 
         if (!bulletAttached) {
             LOG.debug("Start Bullet");
-            bulletSystem = new BulletSystem(entityData);
+            shapeRegistry = new DefaultPhysicalShapeRegistry();
+            bulletSystem = new BulletSystem(entityData, shapeRegistry);
             backgroundSystemsState.enqueue(() -> backgroundSystemsState.attach(bulletSystem));
-            BulletSystemDebugState bulletDebugState = new BulletSystemDebugState(entityData);
+            BulletSystemDebugState bulletDebugState = new BulletSystemDebugState(entityData, shapeRegistry);
             bulletDebugState.setDriverDebugOffset(new Vector3f(0, 1, 0));
             stateManager.attach(bulletDebugState);
             bulletAttached = true;
@@ -109,7 +111,7 @@ public class BulletSystemDriverTest extends JmeLauncher {
             entityData.setComponents(entityId,
                     new SpawnPosition(new Vector3f(0, 0.1f, 0)),
                     new Mass(80),
-                    PhysicalShapeFactory.createCapsuleShape(0.25f, 1.8f, true),
+                    shapeRegistry.register(CollisionShapeHelper.createCapsuleShape(0.25f, 1.8f, true)),
                     new Model(createSpatial())
             );
 
