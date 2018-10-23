@@ -30,6 +30,7 @@ import com.simsilica.lemur.*;
 import com.simsilica.lemur.component.BorderLayout;
 import com.simsilica.lemur.component.SpringGridLayout;
 import com.simsilica.lemur.style.BaseStyles;
+import com.simsilica.sim.GameSystemManager;
 import org.impstack.es.bullet.debug.BulletSystemDebugState;
 import org.impstack.es.bullet.debug.PhysicalEntityDebugStatusPublisher;
 import org.impstack.jme.JmeLauncher;
@@ -108,6 +109,7 @@ public class BulletSystemTest extends JmeLauncher implements ActionListener {
         if (!backgroundSystemsState.isInitialized())
             return;
 
+        GameSystemManager systemManager = backgroundSystemsState.getSystemManager();
         // get the entity data
         EntityData entityData = stateManager.getState(BaseEntityDataState.class).getEntityData();
 
@@ -121,7 +123,7 @@ public class BulletSystemTest extends JmeLauncher implements ActionListener {
             physicalShapeRegistry.register(new PhysicalShape("sphere"), new SphereCollisionShape(.5f));
 
             bulletSystem = new BulletSystem(entityData, physicalShapeRegistry);
-            backgroundSystemsState.enqueue(() -> backgroundSystemsState.attach(bulletSystem));
+            systemManager.enqueue(() -> systemManager.register(BulletSystem.class, bulletSystem));
             bulletAttached = true;
         }
 
@@ -137,7 +139,7 @@ public class BulletSystemTest extends JmeLauncher implements ActionListener {
             LOG.debug("Setup Scene");
             stateManager.attach(new VisualSystem(entityData));
             stateManager.attach(new BulletSystemDebugState(entityData, physicalShapeRegistry));
-            backgroundSystemsState.enqueue(() -> backgroundSystemsState.attach(new DecaySystem(entityData)));
+            systemManager.enqueue(() -> systemManager.register(DecaySystem.class, new DecaySystem(entityData)));
 
             Geometry floor = new Geometry("floor", new Quad(30, 30));
             floor.setMaterial(getMaterial(ColorRGBA.LightGray));

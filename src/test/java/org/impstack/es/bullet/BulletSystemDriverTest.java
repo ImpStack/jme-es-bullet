@@ -25,6 +25,7 @@ import com.simsilica.lemur.event.CursorEventControl;
 import com.simsilica.lemur.event.CursorMotionEvent;
 import com.simsilica.lemur.event.DefaultCursorListener;
 import com.simsilica.lemur.style.BaseStyles;
+import com.simsilica.sim.GameSystemManager;
 import org.impstack.es.bullet.debug.BulletSystemDebugState;
 import org.impstack.es.bullet.debug.PhysicalEntityDebugStatusPublisher;
 import org.impstack.jme.JmeLauncher;
@@ -70,6 +71,7 @@ public class BulletSystemDriverTest extends JmeLauncher {
         if (!backgroundSystemsState.isInitialized())
             return;
 
+        GameSystemManager systemManager = backgroundSystemsState.getSystemManager();
         // set the entity data
         EntityData entityData = stateManager.getState(BaseEntityDataState.class).getEntityData();
 
@@ -81,7 +83,7 @@ public class BulletSystemDriverTest extends JmeLauncher {
             physicalShapeRegistry.register(new PhysicalShape("capsule"), CollisionShapeHelper.createCapsuleShape(0.25f, 1.8f, true));
 
             bulletSystem = new BulletSystem(entityData, physicalShapeRegistry);
-            backgroundSystemsState.enqueue(() -> backgroundSystemsState.attach(bulletSystem));
+            systemManager.enqueue(() -> systemManager.register(BulletSystem.class, bulletSystem));
             BulletSystemDebugState bulletDebugState = new BulletSystemDebugState(entityData, physicalShapeRegistry);
             bulletDebugState.setDriverDebugOffset(new Vector3f(0, 1, 0));
             stateManager.attach(bulletDebugState);
