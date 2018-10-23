@@ -44,7 +44,7 @@ public class BulletSystemDriverTest extends JmeLauncher {
     private boolean sceneSetup = false;
     private DebugWindow debugWindow;
     private BulletSystem bulletSystem;
-    private DefaultPhysicalShapeRegistry shapeRegistry;
+    private PhysicalShapeRegistry physicalShapeRegistry;
     private BasePhysicalEntityDriver entityDriver;
 
     public static void main(String[] args) {
@@ -70,14 +70,19 @@ public class BulletSystemDriverTest extends JmeLauncher {
         if (!backgroundSystemsState.isInitialized())
             return;
 
+        // set the entity data
         EntityData entityData = stateManager.getState(BaseEntityDataState.class).getEntityData();
 
         if (!bulletAttached) {
             LOG.debug("Start Bullet");
-            shapeRegistry = new DefaultPhysicalShapeRegistry();
-            bulletSystem = new BulletSystem(entityData, shapeRegistry);
+
+            // register the collision shape
+            physicalShapeRegistry = new BasePhysicalShapeRegistry();
+            physicalShapeRegistry.register(new PhysicalShape("capsule"), CollisionShapeHelper.createCapsuleShape(0.25f, 1.8f, true));
+
+            bulletSystem = new BulletSystem(entityData, physicalShapeRegistry);
             backgroundSystemsState.enqueue(() -> backgroundSystemsState.attach(bulletSystem));
-            BulletSystemDebugState bulletDebugState = new BulletSystemDebugState(entityData, shapeRegistry);
+            BulletSystemDebugState bulletDebugState = new BulletSystemDebugState(entityData, physicalShapeRegistry);
             bulletDebugState.setDriverDebugOffset(new Vector3f(0, 1, 0));
             stateManager.attach(bulletDebugState);
             bulletAttached = true;
@@ -111,7 +116,7 @@ public class BulletSystemDriverTest extends JmeLauncher {
             entityData.setComponents(entityId,
                     new SpawnPosition(new Vector3f(0, 0.1f, 0)),
                     new Mass(80),
-                    shapeRegistry.register(CollisionShapeHelper.createCapsuleShape(0.25f, 1.8f, true)),
+                    new PhysicalShape("capsule"),
                     new Model(createSpatial())
             );
 

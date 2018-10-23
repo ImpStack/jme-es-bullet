@@ -7,8 +7,19 @@ import com.jme3.bullet.collision.shapes.CollisionShape;
  */
 public interface PhysicalShapeRegistry {
 
-    public PhysicalShape register(CollisionShape collisionShape);
+    /**
+     * Register the collision shape with the physical shape component
+     * @param physicalShape the physical shape component holding the key
+     * @param collisionShape the physical collision shape
+     * @return the collision shape linked to the physical shape
+     */
+    public CollisionShape register(PhysicalShape physicalShape, CollisionShape collisionShape);
 
+    /**
+     * Returns the collision shape linked to the physical shape component
+     * @param physicalShape the physical shape component holding the key
+     * @return the collision shape linked to the physical shape
+     */
     public CollisionShape get(PhysicalShape physicalShape);
 
 }

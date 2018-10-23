@@ -63,7 +63,7 @@ public class BulletSystemTest extends JmeLauncher implements ActionListener {
 
     private DebugWindow debugWindow;
     private BulletSystem bulletSystem;
-    private DefaultPhysicalShapeRegistry shapeRegistry;
+    private PhysicalShapeRegistry physicalShapeRegistry;
     private int entitiesPerClick = 5;
 
     public static void main(String[] args) {
@@ -108,12 +108,19 @@ public class BulletSystemTest extends JmeLauncher implements ActionListener {
         if (!backgroundSystemsState.isInitialized())
             return;
 
+        // get the entity data
         EntityData entityData = stateManager.getState(BaseEntityDataState.class).getEntityData();
 
         if (!bulletAttached) {
             LOG.debug("Start Bullet");
-            shapeRegistry = new DefaultPhysicalShapeRegistry();
-            bulletSystem = new BulletSystem(entityData, shapeRegistry);
+
+            // register physical shapes
+            physicalShapeRegistry = new BasePhysicalShapeRegistry();
+            physicalShapeRegistry.register(new PhysicalShape("static-box"), new BoxCollisionShape(Vector3f.UNIT_XYZ));
+            physicalShapeRegistry.register(new PhysicalShape("box"), new BoxCollisionShape(new Vector3f(.5f, .5f, .5f)));
+            physicalShapeRegistry.register(new PhysicalShape("sphere"), new SphereCollisionShape(.5f));
+
+            bulletSystem = new BulletSystem(entityData, physicalShapeRegistry);
             backgroundSystemsState.enqueue(() -> backgroundSystemsState.attach(bulletSystem));
             bulletAttached = true;
         }
@@ -129,7 +136,7 @@ public class BulletSystemTest extends JmeLauncher implements ActionListener {
         if (!sceneSetup && bulletStarted) {
             LOG.debug("Setup Scene");
             stateManager.attach(new VisualSystem(entityData));
-            stateManager.attach(new BulletSystemDebugState(entityData, shapeRegistry));
+            stateManager.attach(new BulletSystemDebugState(entityData, physicalShapeRegistry));
             backgroundSystemsState.enqueue(() -> backgroundSystemsState.attach(new DecaySystem(entityData)));
 
             Geometry floor = new Geometry("floor", new Quad(30, 30));
@@ -142,8 +149,8 @@ public class BulletSystemTest extends JmeLauncher implements ActionListener {
             floorPhysicsObject.setPhysicsLocation(floor.getWorldTranslation());
             floorPhysicsObject.setPhysicsRotation(floor.getWorldRotation());
             bulletSystem.getPhysicsSpace().addCollisionObject(floorPhysicsObject);
+
             // a few static physical entities
-            shapeRegistry.register("box", new BoxCollisionShape(new Vector3f(1, 1, 1)));
             int total = 10;
             for (int i = 0; i < total; i++) {
                 Geometry box = new Geometry("box", new Box(1, 1, 1));
@@ -153,7 +160,7 @@ public class BulletSystemTest extends JmeLauncher implements ActionListener {
                 entityData.setComponents(entityData.createEntity(),
                         new Mass(0),
                         new SpawnPosition(new Vector3f(FastMath.nextRandomInt(-14, 14), 1, FastMath.nextRandomInt(-14, 14))),
-                        new PhysicalShape("box"),
+                        new PhysicalShape("static-box"),
                         new Model(box));
             }
 
@@ -213,10 +220,8 @@ public class BulletSystemTest extends JmeLauncher implements ActionListener {
 
         if ("box".equals(type)) {
             geometry = new Geometry("box", new Box(radius, radius, radius));
-            physicalShape = shapeRegistry.register(new BoxCollisionShape(new Vector3f(radius, radius, radius)));
         } else if ("sphere".equals(type)) {
             geometry = new Geometry("sphere", new Sphere(16, 16, radius));
-            physicalShape = shapeRegistry.register(new SphereCollisionShape(radius));
         } else {
             throw new NotImplementedException();
         }
@@ -230,7 +235,7 @@ public class BulletSystemTest extends JmeLauncher implements ActionListener {
         entityData.setComponents(box,
                 new Mass(mass),
                 new SpawnPosition(location),
-                physicalShape,
+                new PhysicalShape(type),
                 new Model(geometry),
                 new Position(location.clone(), new Quaternion()),
                 new Decay(60000));
