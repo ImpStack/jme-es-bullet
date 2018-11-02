@@ -20,6 +20,7 @@ public class BasePhysicalEntityDriver implements PhysicalEntityDriver {
     // Set the amount of rotation that will be applied. A value of zero will cancel all rotational force outcome.
     protected static final Vector3f ANGULAR_FACTOR = new Vector3f(0, 1, 0);
 
+    protected boolean initialized = false;
     protected final Vector3f moveDirection = Vector3f.ZERO;
     protected final Vector3f viewDirection = new Vector3f(0, 0, 1);
     protected float moveSpeed = 1.0f;
@@ -45,6 +46,7 @@ public class BasePhysicalEntityDriver implements PhysicalEntityDriver {
         this.physicalEntity = entity;
         this.rigidBodyEntity = (RigidBodyEntity) entity;
         this.rigidBodyEntity.setAngularFactor(ANGULAR_FACTOR);
+        this.initialized = true;
     }
 
     @Override
@@ -64,6 +66,7 @@ public class BasePhysicalEntityDriver implements PhysicalEntityDriver {
 
     @Override
     public void cleanup(PhysicalEntity entity) {
+        this.initialized = false;
     }
 
     public void setViewDirection(Vector3f direction) {
@@ -108,6 +111,10 @@ public class BasePhysicalEntityDriver implements PhysicalEntityDriver {
 
     public void setEntityData(EntityData entityData) {
         this.entityData = entityData;
+    }
+
+    public boolean isInitialized() {
+        return initialized;
     }
 
     protected RigidBodyEntity getRigidBodyEntity() {
