@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class BasePhysicalShapeRegistry implements PhysicalShapeRegistry {
 
-    private static final Logger LOG = LoggerFactory.getLogger(BasePhysicalShapeRegistry.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(BasePhysicalShapeRegistry.class);
 
     private final Map<String, CollisionShape> registry = new ConcurrentHashMap<>();
 
