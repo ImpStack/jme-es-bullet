@@ -48,7 +48,7 @@ public class CollisionShapeHelper {
         CapsuleCollisionShape capsule = new CapsuleCollisionShape(radius, height - (2 * radius));
         if (centerAtBottom) {
             CompoundCollisionShape compoundShape = new CompoundCollisionShape();
-            Vector3f offset = new Vector3f(0, height * 0.5f, 0);
+            Vector3f offset = new Vector3f(0, (height * 0.5f) + (radius * 0.3f), 0);
             compoundShape.addChildShape(capsule, offset);
             return compoundShape;
         } else {
